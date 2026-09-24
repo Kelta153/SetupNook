@@ -1,0 +1,32 @@
+{
+  "tasks": {
+    "generate": "deno run -A npm:prisma@6 generate",
+    "db:push": "deno run -A npm:prisma@6 db push",
+    "spike": "deno run -A --env-file=.env main.ts"
+  },
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@prisma/client": "npm:@prisma/client@6",
+    "@prisma/adapter-neon": "npm:@prisma/adapter-neon@6",
+    "@neondatabase/serverless": "npm:@neondatabase/serverless@0.10",
+    "ws": "npm:ws@8"
+  },
+  "deploy": {
+    "org": "thelab",
+    "app": "setupnook-spike-test",
+    "runtime": {
+      "type": "dynamic",
+      "entrypoint": "./entry.ts"
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+

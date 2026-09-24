@@ -1,0 +1,5 @@
+{
+  "deno.enable": false,
+  "deno.enablePaths": ["apps/api", "spikes/prisma-deno-neon"],
+  "deno.lint": true
+}

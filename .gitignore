@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.output/
+
+# Prisma
+*.db
+*.db-journal
+generated/
+
+# Deno
+.deno_cache/
+
+# Editor/OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.log
+
+# Graphify
+graphify-out/
+
+#files
+CLAUDE_CODE_KICKOFF_PROMPT.md
+GITHUB_ACTIONS.md
+Schema.sql
+
+#Agents and Claude
+.agents/
+.claude/

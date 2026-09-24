@@ -1,0 +1,310 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-node"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+generator client_deno {
+  provider        = "prisma-client-js"
+  previewFeatures = ["queryCompiler", "driverAdapters"]
+  output          = "../generated/prisma-deno"
+  runtime         = "deno"
+  moduleFormat    = "esm"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum SourceStatus {
+  verified
+  candidate
+  rejected
+
+  @@map("source_status")
+}
+
+enum SourceRegion {
+  local_ke
+  international
+
+  @@map("source_region")
+}
+
+// ---------- Identity glue (Better Auth owns `user`/`session`/`account`/`verification` — appended below by `auth generate`) ----------
+
+model UserProfile {
+  userId         String   @id @map("user_id")
+  telegramChatId String?  @map("telegram_chat_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation("UserProfileUser", fields: [userId], references: [id])
+
+  @@map("user_profile")
+}
+
+// ---------- Sources ----------
+
+model Source {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  baseUrl        String       @map("base_url")
+  domain         String       @unique
+  region         SourceRegion
+  status         SourceStatus @default(verified)
+  extractionMode String       @default("llm") @map("extraction_mode")
+  discoveredVia  String?      @map("discovered_via")
+  rawSnippet     String?      @map("raw_snippet")
+  reviewedAt     DateTime?    @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy     String?      @map("reviewed_by")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  reviewer     User?         @relation("SourceReviewedBy", fields: [reviewedBy], references: [id])
+  sourceOffers SourceOffer[]
+
+  @@map("sources")
+}
+
+model WishlistItem {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String   @map("user_id")
+  name                String
+  category            String
+  targetSpecs         Json     @default("{}") @map("target_specs") @db.JsonB
+  imageUrl            String?  @map("image_url")
+  imageSourceOfferId  String?  @map("image_source_offer_id") @db.Uuid
+  weightKg            Decimal? @map("weight_kg") @db.Decimal(8, 3)
+  weightSourceOfferId String?  @map("weight_source_offer_id") @db.Uuid
+  status              String   @default("active")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user              User              @relation("WishlistItemUser", fields: [userId], references: [id])
+  sourceOffers      SourceOffer[]     @relation("WishlistItemOffers")
+  imageSourceOffer  SourceOffer?      @relation("WishlistItemImageOffer", fields: [imageSourceOfferId], references: [id])
+  weightSourceOffer SourceOffer?      @relation("WishlistItemWeightOffer", fields: [weightSourceOfferId], references: [id])
+  alertRule         AlertRule?
+  alertState        AlertState?
+  notificationLogs  NotificationLog[]
+
+  @@map("wishlist_items")
+}
+
+model SourceOffer {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wishlistItemId        String   @map("wishlist_item_id") @db.Uuid
+  sourceId              String   @map("source_id") @db.Uuid
+  externalUrl           String   @map("external_url")
+  externalUrlNormalized String   @map("external_url_normalized")
+  titleRaw              String   @map("title_raw")
+  specsRaw              Json     @default("{}") @map("specs_raw") @db.JsonB
+  matchConfidence       Decimal? @map("match_confidence") @db.Decimal(4, 3)
+  matchReason           String?  @map("match_reason")
+  reviewStatus          String   @default("auto") @map("review_status")
+  inStock               Boolean? @map("in_stock")
+  currency              String
+  imageUrl              String?  @map("image_url")
+  weightKg              Decimal? @map("weight_kg") @db.Decimal(8, 3)
+  firstSeenAt           DateTime @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastCheckedAt         DateTime @default(now()) @map("last_checked_at") @db.Timestamptz(6)
+
+  wishlistItem     WishlistItem      @relation("WishlistItemOffers", fields: [wishlistItemId], references: [id])
+  source           Source            @relation(fields: [sourceId], references: [id])
+  imageForItems    WishlistItem[]    @relation("WishlistItemImageOffer")
+  weightForItems   WishlistItem[]    @relation("WishlistItemWeightOffer")
+  priceSnapshots   PriceSnapshot[]
+  notificationLogs NotificationLog[]
+
+  @@unique([sourceId, externalUrlNormalized])
+  @@map("source_offers")
+}
+
+model PriceSnapshot {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceOfferId String   @map("source_offer_id") @db.Uuid
+  price         Decimal  @db.Decimal(12, 2)
+  currency      String
+  fxRateToKes   Decimal? @map("fx_rate_to_kes") @db.Decimal(12, 6)
+  landedCostKes Decimal? @map("landed_cost_kes") @db.Decimal(12, 2)
+  checkedAt     DateTime @default(now()) @map("checked_at") @db.Timestamptz(6)
+
+  sourceOffer SourceOffer @relation(fields: [sourceOfferId], references: [id])
+
+  @@index([sourceOfferId, checkedAt(sort: Desc)])
+  @@map("price_snapshots")
+}
+
+model ShippingRoute {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  originCountry     String       @map("origin_country")
+  forwarderName     String       @map("forwarder_name")
+  ratePerKgKes      Decimal?     @map("rate_per_kg_kes") @db.Decimal(10, 2)
+  volumetricDivisor Decimal?     @map("volumetric_divisor") @db.Decimal(10, 2)
+  baseFeeKes        Decimal?     @map("base_fee_kes") @db.Decimal(10, 2)
+  dutyEstimatePct   Decimal?     @map("duty_estimate_pct") @db.Decimal(5, 2)
+  status            SourceStatus @default(candidate)
+  isDefaultFallback Boolean      @default(false) @map("is_default_fallback")
+  discoveredVia     String?      @map("discovered_via")
+  reviewedAt        DateTime?    @map("reviewed_at") @db.Timestamptz(6)
+  reviewedBy        String?      @map("reviewed_by")
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  reviewer User? @relation("ShippingRouteReviewedBy", fields: [reviewedBy], references: [id])
+
+  @@map("shipping_routes")
+}
+
+model FxRate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  baseCurrency  String   @map("base_currency")
+  quoteCurrency String   @map("quote_currency")
+  rate          Decimal  @db.Decimal(14, 6)
+  fetchedAt     DateTime @default(now()) @map("fetched_at") @db.Timestamptz(6)
+
+  @@unique([baseCurrency, quoteCurrency, fetchedAt])
+  @@map("fx_rates")
+}
+
+model AlertRule {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wishlistItemId String   @unique @map("wishlist_item_id") @db.Uuid
+  bands          Json     @default("[[5,10],[10,15],[15,20],[20,999]]") @db.JsonB
+  notifyOnRise   Boolean  @default(true) @map("notify_on_rise")
+  channels       String[] @default(["email", "telegram"])
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  wishlistItem WishlistItem @relation(fields: [wishlistItemId], references: [id])
+
+  @@map("alert_rules")
+}
+
+model AlertState {
+  wishlistItemId    String   @id @map("wishlist_item_id") @db.Uuid
+  referencePriceKes Decimal? @map("reference_price_kes") @db.Decimal(12, 2)
+  lastNotifiedBand  String?  @map("last_notified_band")
+  lastDirection     String?  @map("last_direction")
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  wishlistItem WishlistItem @relation(fields: [wishlistItemId], references: [id])
+
+  @@map("alert_state")
+}
+
+model NotificationLog {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  wishlistItemId    String   @map("wishlist_item_id") @db.Uuid
+  channel           String
+  direction         String
+  band              String?
+  priceFromKes      Decimal? @map("price_from_kes") @db.Decimal(12, 2)
+  priceToKes        Decimal? @map("price_to_kes") @db.Decimal(12, 2)
+  bestSourceOfferId String?  @map("best_source_offer_id") @db.Uuid
+  sentAt            DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+  status            String   @default("sent")
+
+  wishlistItem    WishlistItem @relation(fields: [wishlistItemId], references: [id])
+  bestSourceOffer SourceOffer? @relation(fields: [bestSourceOfferId], references: [id])
+
+  @@map("notification_log")
+}
+
+model JobRun {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobType    String    @map("job_type")
+  trigger    String
+  traceId    String    @default(dbgenerated("gen_random_uuid()")) @map("trace_id") @db.Uuid
+  status     String    @default("running")
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+
+  targets JobRunTarget[]
+
+  @@map("job_runs")
+}
+
+model JobRunTarget {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobRunId     String   @map("job_run_id") @db.Uuid
+  targetType   String   @map("target_type")
+  targetId     String?  @map("target_id") @db.Uuid
+  attemptCount Int      @default(1) @map("attempt_count")
+  status       String   @default("pending")
+  errorMessage String?  @map("error_message")
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  jobRun JobRun @relation(fields: [jobRunId], references: [id])
+
+  @@index([status, attemptCount])
+  @@map("job_run_targets")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  profile                UserProfile?    @relation("UserProfileUser")
+  wishlistItems          WishlistItem[]  @relation("WishlistItemUser")
+  reviewedSources        Source[]        @relation("SourceReviewedBy")
+  reviewedShippingRoutes ShippingRoute[] @relation("ShippingRouteReviewedBy")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}

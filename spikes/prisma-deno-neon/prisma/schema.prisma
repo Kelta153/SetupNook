@@ -1,0 +1,19 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["queryCompiler", "driverAdapters"]
+  output          = "../generated/prisma"
+  runtime         = "deno"
+  moduleFormat    = "esm"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SpikeCheck {
+  id        String   @id @default(uuid())
+  note      String
+  createdAt DateTime @default(now())
+}
