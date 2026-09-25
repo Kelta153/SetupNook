@@ -1,0 +1,27 @@
+{
+  "tasks": {
+    "dev": "deno run -A --env-file=.env main.ts",
+    "test": "deno test -A"
+  },
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@prisma/client": "npm:@prisma/client@6.19.3",
+    "@prisma/adapter-neon": "npm:@prisma/adapter-neon@6.19.3",
+    "@neondatabase/serverless": "npm:@neondatabase/serverless@0.10",
+    "ws": "npm:ws@8",
+    "better-auth": "npm:better-auth@1.7.5",
+    "better-auth/": "npm:/better-auth@1.7.5/"
+  },
+  "deploy": {
+    "org": "thelab",
+    "app": "setupnook-api",
+    "runtime": {
+      "type": "dynamic",
+      "entrypoint": "./main.ts"
+    }
+  }
+}
+
+
+
+

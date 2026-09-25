@@ -9,7 +9,7 @@
   },
   "scripts": {
     "auth:generate": "auth generate --config ./auth-config.ts --output ./prisma/schema.prisma --adapter prisma --dialect postgresql -y",
-    "generate": "prisma generate",
+    "generate": "prisma generate && node scripts/sync-to-api.mjs",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "validate": "prisma validate",

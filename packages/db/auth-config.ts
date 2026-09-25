@@ -1,14 +1,12 @@
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { createAuth } from "./auth-options.ts";
+
+// ---------------------------------------------------------------------
+// Node-only default instance. Exists ONLY for the `auth` CLI
+// (`pnpm auth:generate`) to introspect config and (re)generate the
+// Better-Auth-owned models in prisma/schema.prisma. The CLI resolves a
+// config module by looking for a named `auth` export specifically —
+// this export name is load-bearing, don't rename it. apps/api does NOT
+// import this file — it imports createAuth() directly from the synced
+// auth-options.ts and builds its own Deno/Neon-wired client.
 import { PrismaClient } from "./generated/prisma-node/index.js";
-
-const prisma = new PrismaClient();
-
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql",
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-});
+export const auth = createAuth(new PrismaClient());

@@ -17,6 +17,12 @@ build/
 *.db
 *.db-journal
 generated/
+# apps/api/generated/ is an exception: `deno deploy`'s local-source upload
+# respects .gitignore with no way to force-include an excluded path, and
+# apps/api's generated Prisma client + synced auth-options.ts are
+# deploy-critical (main.ts imports them at runtime), not throwaway build
+# output like packages/db/generated/ is.
+!apps/api/generated/
 
 # Deno
 .deno_cache/
