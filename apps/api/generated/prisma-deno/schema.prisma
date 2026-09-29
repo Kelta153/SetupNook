@@ -10,13 +10,14 @@ generator client_deno {
   output          = "../../../apps/api/generated/prisma-deno"
   runtime         = "deno"
   moduleFormat    = "esm"
-  // Deno Deploy's containers are always Debian Linux — this generator
-  // exists solely for that target, unlike the `client` (Node) generator
-  // above which legitimately needs "native" for local dev on whatever OS
-  // you're running on. Including "native" here just bundles a dead
-  // Windows/macOS/Linux-dev binary that can never run on Deploy and
-  // wastes upload size + build memory for nothing.
-  binaryTargets   = ["debian-openssl-3.0.x"]
+  // Deno Deploy's containers are always Debian Linux, but "native" is
+  // still needed here too — apps/api's local dev (`deno task dev`) loads
+  // this same generated client directly, and without a matching local
+  // engine binary it can't run at all on a non-Debian dev machine. The
+  // dead extra binary this bundles is stripped explicitly right before
+  // deploying instead (see packages/db/scripts/strip-deploy-binaries.mjs),
+  // not by narrowing binaryTargets, which would break local dev entirely.
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

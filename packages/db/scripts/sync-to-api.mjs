@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
+import { copyFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,14 +12,9 @@ mkdirSync(destDir, { recursive: true });
 copyFileSync(join(root, "..", "auth-options.ts"), join(destDir, "auth-options.ts"));
 console.log(`Synced auth-options.ts -> ${join(destDir, "auth-options.ts")}`);
 
-// Prisma's engine cache re-copies the locally-detected "native" binary
-// into this generator's output on every generate, even though
-// client_deno's binaryTargets only declares "debian-openssl-3.0.x" —
-// observed behavior, not something binaryTargets alone stops. That
-// binary can never run on Deno Deploy (Debian-only containers) and adds
-// ~21MB of dead weight to every deploy upload, so delete it explicitly.
-const deadWindowsBinary = join(destDir, "prisma-deno", "query_engine-windows.dll.node");
-if (existsSync(deadWindowsBinary)) {
-  rmSync(deadWindowsBinary);
-  console.log(`Removed dead binary -> ${deadWindowsBinary}`);
-}
+// Deliberately NOT stripping the local-platform engine binary here — this
+// same generated client is what apps/api's local dev (`deno task dev`)
+// loads directly, so it needs a working engine for whatever OS you're
+// developing on. The dead binary is stripped explicitly, only right
+// before deploying, by scripts/strip-deploy-binaries.mjs (see apps/api's
+// README for when to run it).

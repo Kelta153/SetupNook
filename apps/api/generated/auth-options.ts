@@ -15,6 +15,15 @@ export interface CreateAuthOptions {
   secret?: string;
   /** Public URL this auth instance is served from. */
   baseURL?: string;
+  /**
+   * Origins allowed to make credentialed requests against this auth
+   * instance (Better Auth's own request-origin check — NOT the browser
+   * CORS headers; those are set separately in apps/api/main.ts because
+   * trustedOrigins alone doesn't emit Access-Control-Allow-Origin/
+   * -Credentials or handle OPTIONS preflight — see
+   * better-auth/better-auth#4052, #4343).
+   */
+  trustedOrigins?: string[];
 }
 
 /**
@@ -37,5 +46,16 @@ export function createAuth(prisma: PrismaClientLike, options: CreateAuthOptions 
     },
     secret: options.secret,
     baseURL: options.baseURL,
+    trustedOrigins: options.trustedOrigins,
+    advanced: {
+      // apps/web and apps/api are permanently on unrelated domains
+      // (Cloudflare Pages vs Deno Deploy), not subdomains of a shared
+      // parent — so the session cookie must be SameSite=None; Secure or
+      // it won't be attached to cross-site fetch() calls at all.
+      defaultCookieAttributes: {
+        sameSite: "none",
+        secure: true,
+      },
+    },
   });
 }

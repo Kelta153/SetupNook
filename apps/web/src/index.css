@@ -1,0 +1,284 @@
+/* ============================================================
+   SetupNooK design system. A daily-use tool, not a marketing site:
+   dense, scannable, zero border-radius, no shadows/gradients. Visual
+   separation comes from hairline rules and solid borders only.
+   ============================================================ */
+
+:root {
+  --bg: #141414;
+  --surface: #1c1c1c;
+  --border: #333333;
+  --text: #ededed;
+  --text-muted: #8c8c8c;
+  --signal-drop: #6fa287; /* price drop — good news, muted not neon */
+  --signal-rise: #c08552; /* price rise — caution, not alarm */
+  --radius: 0;
+
+  --font-ui: "Space Grotesk", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: var(--radius);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+input {
+  font-family: var(--font-data);
+}
+
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================= Login ================= */
+
+.auth-screen {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 32px;
+}
+
+.auth-panel__mark {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.auth-panel__title {
+  font-size: 22px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.field input {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 9px 10px;
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color 0.15s ease;
+}
+
+.field input:hover {
+  border-color: var(--text-muted);
+}
+
+.field input:focus-visible {
+  outline: none;
+  border-color: var(--text);
+}
+
+.auth-error {
+  font-size: 13px;
+  color: var(--signal-rise);
+  border-left: 2px solid var(--signal-rise);
+  padding-left: 10px;
+}
+
+.auth-submit {
+  margin-top: 4px;
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 16px;
+  font-size: 14px;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.auth-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-switch:hover {
+  color: var(--text);
+}
+
+/* ================= Dashboard ================= */
+
+.dashboard {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.dashboard__header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.dashboard__wordmark {
+  font-size: 18px;
+}
+
+.dashboard__account {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.dashboard__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard__add-item,
+.dashboard__settings {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  padding: 8px 14px;
+  font-size: 13px;
+  /* Not wired up yet — step 4 builds the actual add-item/search flow.
+     Visually present per the design brief's wireframe, but inert: no
+     handler, no hover state, cursor signals it's not clickable yet. */
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard__settings {
+  padding: 8px 10px;
+}
+
+.dashboard__logout {
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text);
+  padding: 8px 14px;
+  font-size: 13px;
+  transition: border-color 0.15s ease;
+}
+
+.dashboard__logout:hover {
+  border-color: var(--text);
+}
+
+.dashboard__filter-bar {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard__filter-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  padding: 8px 10px;
+  font-family: var(--font-data);
+  font-size: 13px;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dashboard__ledger {
+  flex: 1;
+  padding: 0 24px;
+}
+
+.dashboard__empty-row {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 14px;
+}
